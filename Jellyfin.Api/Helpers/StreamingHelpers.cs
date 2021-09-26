@@ -204,40 +204,18 @@ namespace Jellyfin.Api.Helpers
 
                 if (!EncodingHelper.IsCopyCodec(state.OutputVideoCodec) && state.OutputVideoBitrate.HasValue)
                 {
-                    var isVideoResolutionNotRequested = !state.VideoRequest.Width.HasValue
-                        && !state.VideoRequest.Height.HasValue
-                        && !state.VideoRequest.MaxWidth.HasValue
-                        && !state.VideoRequest.MaxHeight.HasValue;
+                    var resolution = ResolutionNormalizer.Normalize(
+                        state.VideoStream?.BitRate,
+                        state.VideoStream?.Width,
+                        state.VideoStream?.Height,
+                        state.OutputVideoBitrate.Value,
+                        state.VideoStream?.Codec,
+                        state.OutputVideoCodec,
+                        state.VideoRequest.MaxWidth,
+                        state.VideoRequest.MaxHeight);
 
-                    if (isVideoResolutionNotRequested
-                        && state.VideoStream != null
-                        && state.VideoRequest.VideoBitRate.HasValue
-                        && state.VideoStream.BitRate.HasValue
-                        && state.VideoRequest.VideoBitRate.Value >= state.VideoStream.BitRate.Value)
-                    {
-                        // Don't downscale the resolution if the width/height/MaxWidth/MaxHeight is not requested,
-                        // and the requested video bitrate is higher than source video bitrate.
-                        if (state.VideoStream.Width.HasValue || state.VideoStream.Height.HasValue)
-                        {
-                            state.VideoRequest.MaxWidth = state.VideoStream?.Width;
-                            state.VideoRequest.MaxHeight = state.VideoStream?.Height;
-                        }
-                    }
-                    else
-                    {
-                        var resolution = ResolutionNormalizer.Normalize(
-                            state.VideoStream?.BitRate,
-                            state.VideoStream?.Width,
-                            state.VideoStream?.Height,
-                            state.OutputVideoBitrate.Value,
-                            state.VideoStream?.Codec,
-                            state.OutputVideoCodec,
-                            state.VideoRequest.MaxWidth,
-                            state.VideoRequest.MaxHeight);
-
-                        state.VideoRequest.MaxWidth = resolution.MaxWidth;
-                        state.VideoRequest.MaxHeight = resolution.MaxHeight;
-                    }
+                    state.VideoRequest.MaxWidth = resolution.MaxWidth;
+                    state.VideoRequest.MaxHeight = resolution.MaxHeight;
                 }
             }
 
